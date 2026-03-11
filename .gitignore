@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables (never commit secrets)
+.env
+
+# Data files (too large for git; regenerate with scripts)
+data/raw/*.csv
+data/processed/*.csv
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Streamlit
+.streamlit/secrets.toml
