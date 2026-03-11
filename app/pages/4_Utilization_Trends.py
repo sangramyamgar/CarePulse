@@ -8,6 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
+from app.theme import page_header, insight, section, COLORS, PALETTE_SEQ
+from app.filters import get_date_filter
 from src.analysis.utilization import (
     get_monthly_volume,
     get_volume_by_class,
@@ -16,83 +19,79 @@ from src.analysis.utilization import (
     get_top_conditions,
 )
 
-
 st.set_page_config(page_title="Utilization Trends", page_icon="📈", layout="wide")
-st.title("📈 Utilization Trends")
-st.markdown("How are our services being used? Volume, cost, and length of stay over time.")
-st.markdown("---")
+page_header("Utilization Trends", "How are our services being used? Volume, cost, and length of stay over time.", icon="📈")
+
+date_start, date_end = get_date_filter()
 
 # ---- Filters ----
-monthly = get_monthly_volume()
+monthly = get_monthly_volume(date_start, date_end)
 if not monthly.empty:
     encounter_types = sorted(monthly["encounter_class"].unique())
     selected_types = st.multiselect(
-        "Filter by encounter type",
-        encounter_types,
-        default=encounter_types,
+        "Filter by encounter type", encounter_types, default=encounter_types,
     )
     filtered = monthly[monthly["encounter_class"].isin(selected_types)]
 
     # ---- Monthly Volume ----
-    st.subheader("Monthly Encounter Volume")
-    fig_vol = px.line(
-        filtered.groupby("month")["encounter_count"].sum().reset_index(),
-        x="month", y="encounter_count",
-        title="Total Encounters Per Month",
-        labels={"month": "Month", "encounter_count": "Encounters"},
-        markers=True,
-    )
-    fig_vol.update_traces(line_color="#1976D2")
+    section("Monthly Encounter Volume")
+
+    fig_vol = go.Figure()
+    agg = filtered.groupby("month")["encounter_count"].sum().reset_index()
+    fig_vol.add_trace(go.Scatter(
+        x=agg["month"], y=agg["encounter_count"],
+        mode="lines+markers",
+        line=dict(color=COLORS["primary"], width=2.5),
+        marker=dict(size=6),
+        name="Total",
+    ))
+    fig_vol.update_layout(yaxis_title="Encounters")
     st.plotly_chart(fig_vol, use_container_width=True)
 
     # Stacked area by type
     fig_stack = px.area(
         filtered, x="month", y="encounter_count", color="encounter_class",
-        title="Volume by Service Line",
-        labels={"month": "Month", "encounter_count": "Encounters", "encounter_class": "Type"},
-        color_discrete_sequence=px.colors.qualitative.Safe,
+        labels={"month": "", "encounter_count": "Encounters", "encounter_class": "Type"},
+        color_discrete_sequence=PALETTE_SEQ,
     )
     st.plotly_chart(fig_stack, use_container_width=True)
 
-st.markdown("---")
-
 # ---- Cost Trends ----
-st.subheader("Cost Trends")
+section("Cost Trends")
 
 left, right = st.columns(2)
-
-cost = get_cost_by_month()
+cost = get_cost_by_month(date_start, date_end)
 if not cost.empty:
     with left:
         fig_total_cost = px.bar(
             cost, x="month", y="total_cost",
-            title="Monthly Total Cost",
-            labels={"month": "Month", "total_cost": "Total Cost ($)"},
-            color_discrete_sequence=["#FF7043"],
+            labels={"month": "", "total_cost": "Total Cost ($)"},
+            color_discrete_sequence=[COLORS["accent"]],
         )
+        fig_total_cost.update_layout(showlegend=False)
         st.plotly_chart(fig_total_cost, use_container_width=True)
 
     with right:
-        fig_avg_cost = px.line(
-            cost, x="month", y="avg_cost",
-            title="Average Cost per Encounter",
-            labels={"month": "Month", "avg_cost": "Avg Cost ($)"},
-            markers=True,
-        )
-        fig_avg_cost.update_traces(line_color="#26A69A")
+        fig_avg_cost = go.Figure()
+        fig_avg_cost.add_trace(go.Scatter(
+            x=cost["month"], y=cost["avg_cost"],
+            mode="lines+markers",
+            line=dict(color=COLORS["secondary"], width=2.5),
+            marker=dict(size=6),
+            name="Avg Cost",
+        ))
+        fig_avg_cost.update_layout(yaxis_title="Avg Cost ($)")
         st.plotly_chart(fig_avg_cost, use_container_width=True)
 
-    st.caption(
-        "**So what?** Rising total cost with flat average cost means volume is growing. "
+    insight(
+        "Rising total cost with flat average cost means volume is growing. "
         "Rising average cost means per-patient intensity is increasing — investigate case mix."
     )
 
-st.markdown("---")
-
 # ---- Length of Stay ----
-st.subheader("Length of Stay by Service Line")
+section("Length of Stay by Service Line")
 
-los = get_los_by_class()
+los = get_los_by_class(date_start, date_end)
 if not los.empty:
     st.dataframe(
         los.rename(columns={
@@ -103,25 +102,23 @@ if not los.empty:
         }),
         use_container_width=True,
     )
+    st.download_button("⬇ Export CSV", los.to_csv(index=False), "los_by_class.csv", "text/csv")
 
-    st.caption(
-        "**So what?** A large gap between mean and median LOS indicates outliers — "
-        "a few very long stays pulling the average up. Investigate those cases "
-        "for potential care coordination issues."
+    insight(
+        "A large gap between mean and median LOS indicates outliers — "
+        "a few very long stays pulling the average up. Investigate for care coordination issues."
     )
 
 # ---- Volume by Class ----
-st.subheader("Encounter Mix")
+section("Encounter Mix")
 
-by_class = get_volume_by_class()
+by_class = get_volume_by_class(date_start, date_end)
 if not by_class.empty:
     fig_mix = px.bar(
-        by_class, x="encounter_class", y="encounter_count",
-        text="encounter_count",
-        title="Total Encounters by Type",
-        labels={"encounter_class": "Type", "encounter_count": "Count"},
+        by_class, x="encounter_class", y="encounter_count", text="encounter_count",
+        labels={"encounter_class": "", "encounter_count": "Count"},
         color="encounter_class",
-        color_discrete_sequence=px.colors.qualitative.Safe,
+        color_discrete_sequence=PALETTE_SEQ,
     )
     fig_mix.update_traces(textposition="outside")
     fig_mix.update_layout(showlegend=False)

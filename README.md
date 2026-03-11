@@ -1,5 +1,7 @@
 # CarePulse: Readmission & Utilization Analytics Platform
 
+[![CI — Tests & Data Contracts](https://github.com/sangramyamgar/CarePulse/actions/workflows/ci.yml/badge.svg)](https://github.com/sangramyamgar/CarePulse/actions/workflows/ci.yml)
+
 A healthcare analytics project that ingests synthetic patient data, models it in PostgreSQL, computes readmission rates and utilization metrics, and surfaces insights through an interactive Streamlit dashboard.
 
 ## What This Project Does

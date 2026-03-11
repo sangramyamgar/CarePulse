@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg_patients
+    description: "Cleaned patient demographics with age groups."
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+      - name: gender
+        tests:
+          - accepted_values:
+              values: ['M', 'F']
+
+  - name: stg_encounters
+    description: "Cleaned encounters with derived LOS and month fields."
+    columns:
+      - name: encounter_id
+        tests: [unique, not_null]
+      - name: patient_id
+        tests: [not_null]
+
+  - name: stg_conditions
+    description: "Deduplicated conditions with chronic flag."

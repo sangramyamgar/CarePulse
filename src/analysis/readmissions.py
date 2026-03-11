@@ -5,14 +5,16 @@ Functions that query the readmissions table and return DataFrames
 ready for dashboard consumption.
 """
 
+import datetime
 import pandas as pd
-from src.db import run_query, run_sql_file
+from src.db import run_query, run_sql_file, date_clause
 from src.config import SQL_DIR
 
 
-def get_overall_readmission_rate() -> dict:
-    """Return headline readmission metrics as a dictionary."""
-    df = run_query("""
+def get_overall_readmission_rate(start: datetime.date | None = None, end: datetime.date | None = None) -> dict:
+    dc, dp = date_clause(start, end, "discharge_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    df = run_query(f"""
         SELECT
             COUNT(*) AS total_inpatient,
             SUM(CASE WHEN is_30day_readmit THEN 1 ELSE 0 END) AS readmissions,
@@ -21,13 +23,15 @@ def get_overall_readmission_rate() -> dict:
                 / NULLIF(COUNT(*), 0), 1
             ) AS readmission_rate
         FROM readmissions
-    """)
+        {where}
+    """, dp)
     return df.iloc[0].to_dict()
 
 
-def get_readmission_trend() -> pd.DataFrame:
-    """Monthly readmission rate trend."""
-    return run_query("""
+def get_readmission_trend(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "discharge_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    return run_query(f"""
         SELECT
             DATE_TRUNC('month', discharge_date)::DATE AS month,
             COUNT(*) AS total_discharges,
@@ -37,18 +41,17 @@ def get_readmission_trend() -> pd.DataFrame:
                 / NULLIF(COUNT(*), 0), 1
             ) AS readmission_rate
         FROM readmissions
+        {where}
         GROUP BY 1
         ORDER BY 1
-    """)
+    """, dp)
 
 
 def get_readmission_by_age_group() -> pd.DataFrame:
-    """Readmission rate broken down by age group."""
     return run_sql_file(str(SQL_DIR / "cohort_analysis.sql"))
 
 
 def get_readmission_by_condition(top_n: int = 10) -> pd.DataFrame:
-    """Readmission rate by primary condition (top N)."""
     return run_query(f"""
         SELECT
             primary_condition,
@@ -67,7 +70,6 @@ def get_readmission_by_condition(top_n: int = 10) -> pd.DataFrame:
 
 
 def get_readmission_by_payer() -> pd.DataFrame:
-    """Readmission rate by payer."""
     return run_query("""
         SELECT
             payer,
@@ -84,7 +86,6 @@ def get_readmission_by_payer() -> pd.DataFrame:
 
 
 def get_readmission_by_chronic_count() -> pd.DataFrame:
-    """Readmission rate by number of chronic conditions."""
     return run_query("""
         SELECT
             chronic_count,
@@ -101,7 +102,6 @@ def get_readmission_by_chronic_count() -> pd.DataFrame:
 
 
 def get_days_to_readmit_distribution() -> pd.DataFrame:
-    """Distribution of days to readmission (only those who were readmitted)."""
     return run_query("""
         SELECT days_to_readmit
         FROM readmissions

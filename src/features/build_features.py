@@ -84,9 +84,9 @@ def build_readmission_features() -> pd.DataFrame:
     # Encode gender as binary
     df["is_male"] = (df["gender"] == "M").astype(int)
 
-    # Fill nulls
-    df["los_days"] = df["los_days"].fillna(0)
-    df["total_cost"] = df["total_cost"].fillna(0)
+    # Fill nulls and clip extreme values to prevent overflow in scaling
+    df["los_days"] = df["los_days"].fillna(0).clip(upper=365)
+    df["total_cost"] = df["total_cost"].fillna(0).clip(upper=1_000_000)
     df["chronic_count"] = df["chronic_count"].fillna(0)
     df["prior_inpatient_count"] = df["prior_inpatient_count"].fillna(0)
     df["is_emergency_prior_30d"] = df["is_emergency_prior_30d"].fillna(0)

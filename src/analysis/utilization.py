@@ -5,14 +5,17 @@ Functions for encounter volume, length of stay, cost trends,
 and service-line breakdowns.
 """
 
+import datetime
 import pandas as pd
-from src.db import run_query, run_sql_file
+from src.db import run_query, run_sql_file, date_clause
 from src.config import SQL_DIR
 
 
-def get_headline_metrics() -> dict:
-    """Key utilization numbers for the executive overview."""
-    df = run_query("""
+def get_headline_metrics(start: datetime.date | None = None, end: datetime.date | None = None) -> dict:
+    dc, dp = date_clause(start, end, "start_date", "WHERE" if True else "AND")
+    # When no filter, WHERE 1=1 keeps it easy
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    df = run_query(f"""
         SELECT
             COUNT(*)                                                AS total_encounters,
             COUNT(DISTINCT patient_id)                              AS total_patients,
@@ -25,32 +28,45 @@ def get_headline_metrics() -> dict:
                 END
             ), 1) AS avg_los_days
         FROM encounters
-    """)
+        {where}
+    """, dp)
     return df.iloc[0].to_dict()
 
 
-def get_monthly_volume() -> pd.DataFrame:
-    """Monthly encounter volume by encounter class."""
-    return run_sql_file(str(SQL_DIR / "utilization_metrics.sql"))
+def get_monthly_volume(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "start_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    return run_query(f"""
+        SELECT
+            DATE_TRUNC('month', start_date)::DATE AS month,
+            encounter_class,
+            COUNT(*) AS encounter_count
+        FROM encounters
+        {where}
+        GROUP BY 1, 2
+        ORDER BY 1, 2
+    """, dp)
 
 
-def get_volume_by_class() -> pd.DataFrame:
-    """Total encounters by class."""
-    return run_query("""
+def get_volume_by_class(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "start_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    return run_query(f"""
         SELECT
             encounter_class,
             COUNT(*) AS encounter_count,
             ROUND(AVG(total_cost), 2) AS avg_cost,
             ROUND(SUM(total_cost), 2) AS total_cost
         FROM encounters
+        {where}
         GROUP BY encounter_class
         ORDER BY encounter_count DESC
-    """)
+    """, dp)
 
 
-def get_los_by_class() -> pd.DataFrame:
-    """Average length of stay by encounter class (inpatient & emergency)."""
-    return run_query("""
+def get_los_by_class(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    return run_query(f"""
         SELECT
             encounter_class,
             COUNT(*) AS encounters,
@@ -61,12 +77,12 @@ def get_los_by_class() -> pd.DataFrame:
         FROM encounters
         WHERE encounter_class IN ('inpatient', 'emergency')
           AND end_date IS NOT NULL
+          {dc}
         GROUP BY encounter_class
-    """)
+    """, dp)
 
 
 def get_top_conditions(top_n: int = 10) -> pd.DataFrame:
-    """Most frequent conditions across all encounters."""
     return run_query(f"""
         SELECT
             c.description AS condition,
@@ -79,28 +95,32 @@ def get_top_conditions(top_n: int = 10) -> pd.DataFrame:
     """)
 
 
-def get_payer_mix() -> pd.DataFrame:
-    """Encounter distribution by payer."""
-    return run_query("""
+def get_payer_mix(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "start_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    return run_query(f"""
         SELECT
             payer,
             COUNT(*) AS encounter_count,
             ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct
         FROM encounters
+        {where}
         GROUP BY payer
         ORDER BY encounter_count DESC
-    """)
+    """, dp)
 
 
-def get_cost_by_month() -> pd.DataFrame:
-    """Monthly total and average cost trend."""
-    return run_query("""
+def get_cost_by_month(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
+    dc, dp = date_clause(start, end, "start_date", "WHERE")
+    where = f"WHERE 1=1 {dc}" if dc else ""
+    return run_query(f"""
         SELECT
             DATE_TRUNC('month', start_date)::DATE AS month,
             ROUND(SUM(total_cost), 2) AS total_cost,
             ROUND(AVG(total_cost), 2) AS avg_cost,
             COUNT(*) AS encounters
         FROM encounters
+        {where}
         GROUP BY 1
         ORDER BY 1
-    """)
+    """, dp)

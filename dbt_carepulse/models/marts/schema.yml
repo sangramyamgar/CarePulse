@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: mart_readmissions
+    description: >
+      Core readmission analytics table. Each row is an inpatient encounter
+      enriched with days-to-next-admission, 30-day readmission flag,
+      primary condition, and chronic count. Built using LEAD() window function.
+    columns:
+      - name: encounter_id
+        tests: [unique, not_null]
+      - name: is_30day_readmit
+        tests: [not_null]
+      - name: days_to_readmit
+        description: "Days between discharge and next admission (NULL if no readmit)"
+
+  - name: mart_utilization_monthly
+    description: >
+      Monthly encounter aggregates by facility and service line.
+      Powers the Utilization Trends dashboard page.
+
+  - name: mart_facility_performance
+    description: >
+      Facility scorecard with encounter volume, ALOS, cost, readmission rate,
+      and NTILE(4) quartile rankings across all facilities.
+    columns:
+      - name: facility_name
+        tests: [unique, not_null]

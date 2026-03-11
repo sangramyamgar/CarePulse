@@ -1,18 +1,16 @@
 """
 Executive Overview — KPI dashboard for hospital leadership.
-
-Shows headline metrics, monthly trends, and high-level breakdowns.
 """
 
 import sys
 from pathlib import Path
-
-# Allow imports from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from app.theme import page_header, insight, section, metric_row, COLORS, PALETTE_SEQ
+from app.filters import get_date_filter
 from src.analysis.readmissions import get_overall_readmission_rate, get_readmission_trend
 from src.analysis.utilization import (
     get_headline_metrics,
@@ -21,99 +19,96 @@ from src.analysis.utilization import (
     get_payer_mix,
 )
 
-
 st.set_page_config(page_title="Executive Overview", page_icon="📊", layout="wide")
-st.title("📊 Executive Overview")
-st.markdown("High-level performance metrics for hospital leadership.")
-st.markdown("---")
+page_header("Executive Overview", "High-level performance metrics for hospital leadership.", icon="📊")
+
+date_start, date_end = get_date_filter()
 
 # ---- KPI Cards ----
-metrics = get_headline_metrics()
-readmit = get_overall_readmission_rate()
+metrics = get_headline_metrics(date_start, date_end)
+readmit = get_overall_readmission_rate(date_start, date_end)
 
-col1, col2, col3, col4, col5 = st.columns(5)
-col1.metric("Total Encounters", f"{int(metrics['total_encounters']):,}")
-col2.metric("Total Patients", f"{int(metrics['total_patients']):,}")
-col3.metric("Avg Length of Stay", f"{metrics['avg_los_days']} days")
-col4.metric("30-Day Readmit Rate", f"{readmit['readmission_rate']}%")
-col5.metric("Avg Encounter Cost", f"${metrics['avg_cost']:,.0f}")
-
-st.markdown("---")
+metric_row([
+    {"label": "Total Encounters", "value": f"{int(metrics['total_encounters']):,}"},
+    {"label": "Total Patients", "value": f"{int(metrics['total_patients']):,}"},
+    {"label": "Avg Length of Stay", "value": f"{metrics['avg_los_days']} days"},
+    {"label": "30-Day Readmit Rate", "value": f"{readmit['readmission_rate']}%"},
+    {"label": "Avg Encounter Cost", "value": f"${metrics['avg_cost']:,.0f}"},
+])
 
 # ---- Monthly Trend ----
-st.subheader("Monthly Encounter Volume")
+section("Monthly Encounter Volume")
 
-monthly = get_monthly_volume()
+monthly = get_monthly_volume(date_start, date_end)
 if not monthly.empty:
     fig_monthly = px.bar(
-        monthly,
-        x="month",
-        y="encounter_count",
-        color="encounter_class",
-        title="Encounter Volume by Month and Type",
-        labels={"month": "Month", "encounter_count": "Encounters", "encounter_class": "Type"},
-        color_discrete_sequence=px.colors.qualitative.Safe,
+        monthly, x="month", y="encounter_count", color="encounter_class",
+        labels={"month": "", "encounter_count": "Encounters", "encounter_class": "Type"},
+        color_discrete_sequence=PALETTE_SEQ,
     )
     fig_monthly.update_layout(xaxis_tickangle=-45, bargap=0.2)
     st.plotly_chart(fig_monthly, use_container_width=True)
+    st.download_button("⬇ Export CSV", monthly.to_csv(index=False), "monthly_volume.csv", "text/csv")
 
-    st.caption(
-        "**So what?** Look for seasonal spikes (e.g., winter respiratory season) "
-        "and whether inpatient volume is growing faster than outpatient — "
-        "that could signal capacity pressure."
+    insight(
+        "Look for seasonal spikes (e.g., winter respiratory season) and whether "
+        "inpatient volume is growing faster than outpatient — that could signal capacity pressure."
     )
 
 # ---- Two-column charts ----
 left, right = st.columns(2)
 
 with left:
-    st.subheader("Encounters by Type")
-    by_class = get_volume_by_class()
+    section("Service Line Mix")
+    by_class = get_volume_by_class(date_start, date_end)
     if not by_class.empty:
         fig_class = px.pie(
-            by_class,
-            values="encounter_count",
-            names="encounter_class",
-            title="Service Line Mix",
-            color_discrete_sequence=px.colors.qualitative.Safe,
+            by_class, values="encounter_count", names="encounter_class",
+            color_discrete_sequence=PALETTE_SEQ,
+            hole=0.45,
         )
+        fig_class.update_traces(textposition="inside", textinfo="percent+label",
+                                textfont_size=12)
+        fig_class.update_layout(showlegend=False, margin=dict(t=16, b=16))
         st.plotly_chart(fig_class, use_container_width=True)
 
 with right:
-    st.subheader("Payer Mix")
-    payer = get_payer_mix()
+    section("Payer Mix")
+    payer = get_payer_mix(date_start, date_end)
     if not payer.empty:
         fig_payer = px.bar(
-            payer,
-            x="payer",
-            y="encounter_count",
-            text="pct",
-            title="Encounters by Payer",
-            labels={"payer": "Payer", "encounter_count": "Encounters"},
-            color_discrete_sequence=["#2196F3"],
+            payer, x="payer", y="encounter_count", text="pct",
+            labels={"payer": "", "encounter_count": "Encounters"},
+            color_discrete_sequence=[COLORS["primary"]],
         )
         fig_payer.update_traces(texttemplate="%{text}%", textposition="outside")
+        fig_payer.update_layout(showlegend=False)
         st.plotly_chart(fig_payer, use_container_width=True)
 
 # ---- Readmission Trend ----
-st.subheader("30-Day Readmission Rate Trend")
+section("30-Day Readmission Rate Trend")
 
-trend = get_readmission_trend()
+trend = get_readmission_trend(date_start, date_end)
 if not trend.empty:
-    fig_trend = px.line(
-        trend,
-        x="month",
-        y="readmission_rate",
-        title="Monthly 30-Day Readmission Rate (%)",
-        labels={"month": "Month", "readmission_rate": "Readmission Rate (%)"},
-        markers=True,
+    fig_trend = go.Figure()
+    fig_trend.add_trace(go.Scatter(
+        x=trend["month"], y=trend["readmission_rate"],
+        mode="lines+markers",
+        line=dict(color=COLORS["danger"], width=2.5),
+        marker=dict(size=7, color=COLORS["danger"]),
+        fill="tozeroy",
+        fillcolor="rgba(239,68,68,0.08)",
+        name="Readmit Rate",
+    ))
+    fig_trend.update_layout(
+        yaxis_title="Rate (%)",
+        yaxis_range=[0, max(trend["readmission_rate"].max() * 1.3, 10)],
     )
-    fig_trend.update_traces(line_color="#E53935")
-    fig_trend.update_layout(yaxis_range=[0, max(trend["readmission_rate"].max() * 1.3, 10)])
     st.plotly_chart(fig_trend, use_container_width=True)
+    st.download_button("⬇ Export CSV", trend.to_csv(index=False), "readmission_trend.csv", "text/csv")
 
-    st.caption(
-        "**So what?** A rising readmission rate may indicate gaps in discharge planning, "
-        "follow-up care, or patient education. National benchmarks are typically 15-20% "
+    insight(
+        "A rising readmission rate may indicate gaps in discharge planning, "
+        "follow-up care, or patient education. National benchmarks are typically 15–20% "
         "for all-cause 30-day readmission."
     )

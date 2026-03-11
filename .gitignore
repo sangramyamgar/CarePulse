@@ -31,3 +31,8 @@ notebooks/.ipynb_checkpoints/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# dbt
+dbt_carepulse/target/
+dbt_carepulse/dbt_packages/
+dbt_carepulse/logs/
