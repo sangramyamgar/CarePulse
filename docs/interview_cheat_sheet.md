@@ -6,14 +6,17 @@ Quick-reference card for revision the night before the interview.
 
 ## Ultra-Short Talking Points
 
-- **What:** End-to-end healthcare analytics platform for readmission and utilization analysis
+- **What:** End-to-end healthcare analytics platform for readmission, utilization, and HEDIS quality measure analysis
 - **Data:** Synthetic (Synthea-style), 1,000 patients, ~6,000 encounters, 8 facilities
-- **Stack:** Python + pandas + PostgreSQL + SQL + Streamlit + Plotly
+- **Stack:** Python + pandas + PostgreSQL + SQL + dbt + Streamlit + Plotly + scikit-learn
 - **Core metric:** 30-day all-cause readmission rate
-- **Dashboard:** 6 pages — Exec Overview, Cohorts, Readmissions, Utilization, Facilities, Data Quality
-- **Model:** Logistic regression (interpretable, decision-support only)
-- **Key SQL:** CTEs, LEAD() window function, DATE_TRUNC, PERCENTILE_CONT
-- **Differentiator:** Not a Kaggle project — it's an analytics product with data modeling, SQL, DQ, and business storytelling
+- **Dashboard:** 8 pages — Exec Overview, Cohorts, Readmissions, Utilization, Facilities, Data Quality, Model Explainability, HEDIS Measures
+- **Model:** Logistic regression (interpretable, interactive risk scorer, ROC + feature importance)
+- **dbt:** 3 staging + 3 mart models, 27 automated tests
+- **HEDIS:** ACR (All-Cause Readmissions) and FUH (Follow-Up After MH Hospitalization)
+- **CI/CD:** GitHub Actions with PostgreSQL service container (pytest + dbt build)
+- **Key SQL:** CTEs, LEAD() window function, DATE_TRUNC, PERCENTILE_CONT, NTILE
+- **Differentiator:** Not a Kaggle project — it's an analytics product with dbt, CI, HEDIS, model explainability, data lineage, and business storytelling
 
 ---
 
@@ -44,7 +47,7 @@ Quick-reference card for revision the night before the interview.
 → Three layers: ingestion cleaning (dedup, date fixes), SQL edge-case handling (NULLIF, COALESCE), dedicated DQ dashboard with automated scoring.
 
 ### 9. "What would you change for production?"
-→ dbt for transformations, Airflow for scheduling, proper warehouse (Snowflake), RBAC, alerting, CI/CD.
+→ Airflow for scheduling, proper warehouse (Snowflake), RBAC, alerting, more HEDIS measures. Note: dbt, CI/CD, data lineage, and model explainability are already built.
 
 ### 10. "Why not deep learning?"
 → Doesn't outperform logistic regression for tabular readmission data. Not interpretable. Regulators require explainability.
@@ -59,10 +62,10 @@ Quick-reference card for revision the night before the interview.
 → Common Table Expression. A named subquery. Makes SQL readable by breaking complex logic into named steps.
 
 ### 14. "How does data flow end-to-end?"
-→ Generate CSVs → Load into Postgres → Clean/validate → Build readmissions table → SQL analytics → Streamlit reads results → Charts rendered.
+→ Generate CSVs → Load into Postgres → Clean/validate → Build readmissions table → dbt staging/mart models → SQL analytics → Streamlit reads results → Charts rendered. CI runs all of this automatically on every push.
 
 ### 15. "What metrics did you track?"
-→ 30-day readmission rate, ALOS, ED utilization, chronic burden, payer mix, cost trends, DQ score.
+→ 30-day readmission rate, ALOS, ED utilization, chronic burden, payer mix, cost trends, DQ score, HEDIS ACR (All-Cause Readmissions), HEDIS FUH (Follow-Up After MH Hospitalization).
 
 ### 16. "How is this different from a school project?"
 → Normalized schema, production-style SQL, data quality monitoring, business-relevant metrics, multi-page dashboard with storytelling. Not just a notebook.
@@ -71,7 +74,7 @@ Quick-reference card for revision the night before the interview.
 → Inpatient-only readmissions, 30-day window from discharge to admission, unresolved conditions = chronic, no transfer logic.
 
 ### 18. "What would you add with more time?"
-→ Patient-level drilldown, medication adherence analysis, social determinants of health, predictive alerts, A/B testing for interventions.
+→ Patient-level drilldown, medication adherence analysis, social determinants of health, predictive alerts, A/B testing for interventions, more HEDIS measures (BCS, CIS, CDC).
 
 ### 19. "How do you ensure your SQL is correct?"
 → Tested edge cases (single encounter, big gaps, boundary at 30 days). Compared Python pandas output to SQL output. DQ checks validate totals.
@@ -90,18 +93,25 @@ Quick-reference card for revision the night before the interview.
 | ED Utilization | ED visits per 1,000 patients | Access-to-care indicator |
 | Chronic Burden | % patients with ≥2 chronic conditions | Cost driver |
 | Data Quality Score | Average of completeness + uniqueness + integrity | Trust metric |
+| HEDIS ACR | All-Cause Readmission rate for ages 18–64 | NCQA quality measure |
+| HEDIS FUH-7/FUH-30 | % MH discharges with 7/30-day follow-up | Behavioral health quality |
 
 ---
 
 ## Project Strengths
 
-- ✅ End-to-end: raw data → database → analytics → dashboard
-- ✅ Healthcare-specific metrics (readmission, ALOS, chronic burden)
-- ✅ Real SQL proficiency (CTEs, window functions, aggregations)
+- ✅ End-to-end: raw data → database → dbt models → analytics → dashboard
+- ✅ Healthcare-specific metrics (readmission, ALOS, chronic burden, HEDIS)
+- ✅ Real SQL proficiency (CTEs, window functions, NTILE, aggregations)
+- ✅ dbt transformation layer (3 staging + 3 mart models, 27 tests)
+- ✅ GitHub Actions CI pipeline (pytest + dbt build)
+- ✅ HEDIS quality measures (ACR, FUH) aligned with NCQA specifications
+- ✅ Interpretable ML model with interactive risk scorer
+- ✅ Data lineage diagram (Mermaid in architecture docs)
 - ✅ Normalized relational data model
 - ✅ Data quality monitoring (not just analysis)
-- ✅ Interactive dashboard with business storytelling ("so what?" annotations)
-- ✅ Simple, interpretable model with clear limitations stated
+- ✅ Interactive 8-page dashboard with business storytelling ("so what?" annotations)
+- ✅ Global date filters and CSV exports
 - ✅ Clean, modular code structure
 - ✅ Locally runnable on macOS
 - ✅ Fully reproducible (synthetic data)
@@ -117,13 +127,14 @@ Quick-reference card for revision the night before the interview.
 - ⚠️ Model is illustrative, not deployable
 - ⚠️ No incremental loading (full refresh each run)
 - ⚠️ No transfer/observation-stay logic
+- ⚠️ FUH measure has no data in synthetic set (gracefully handled)
 
 ---
 
 ## Top 5 Things I Must Not Forget
 
 1. **Start with the business problem** — "Hospitals get penalized for readmissions. This tool helps them find out why."
-2. **Walk through the data flow** — CSV → ETL → Postgres → SQL → Dashboard. Don't skip this.
+2. **Walk through the data flow** — CSV → ETL → Postgres → dbt → SQL → Dashboard. Don't skip this.
 3. **Show ONE SQL query** — Open readmission_flag.sql. Explain the LEAD() window function.
-4. **Mention data quality** — This separates you from students who just make charts.
-5. **Be honest about limitations** — "It's synthetic data. The model is illustrative. In production, I'd add dbt, Airflow, and clinical validation."
+4. **Mention dbt and CI** — "I have 27 dbt tests passing automatically on every push via GitHub Actions."
+5. **Be honest about limitations** — "It's synthetic data. The model is illustrative. In production, I'd add Airflow and clinical validation."

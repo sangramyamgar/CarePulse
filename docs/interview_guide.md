@@ -29,17 +29,17 @@ A comprehensive guide to explaining every aspect of this project in interviews.
 
 ### 30-Second Version
 
-> "I built CarePulse, a healthcare analytics platform that analyzes patient readmission patterns and hospital utilization. It takes synthetic patient data, loads it into PostgreSQL, computes 30-day readmission rates and utilization metrics using SQL, and presents everything through an interactive Streamlit dashboard. The goal is to help hospital leadership identify which patient groups are coming back too soon and where operational hotspots exist."
+> "I built CarePulse, a healthcare analytics platform that analyzes patient readmission patterns, hospital utilization, and HEDIS quality measures. It takes synthetic patient data, runs it through a Python ETL into PostgreSQL, applies dbt transformations, and presents everything through an 8-page interactive Streamlit dashboard. It includes an interpretable ML risk model, NCQA-aligned HEDIS measures, and a full CI pipeline with GitHub Actions. The goal is to help hospital leadership identify which patient groups are coming back too soon and where operational hotspots exist."
 
 ### 1-Minute Version
 
-> "CarePulse is a healthcare analytics project I built end-to-end. It simulates realistic hospital data — patients, encounters, conditions, medications — and loads it into a PostgreSQL database with a normalized relational schema. I wrote SQL analytics using CTEs and window functions to compute 30-day readmission rates, average length of stay, and utilization trends. The results are surfaced through a 6-page Streamlit dashboard with KPI cards, interactive Plotly charts, cohort breakdowns, and facility comparisons. I also built a data quality monitoring page that scores completeness, uniqueness, and referential integrity. The architecture is simple: CSV → Python ETL → PostgreSQL → SQL analytics → Dashboard. Every piece is explainable and locally runnable."
+> "CarePulse is a healthcare analytics project I built end-to-end. It simulates realistic hospital data — patients, encounters, conditions, medications — and loads it into a PostgreSQL database with a normalized relational schema. I wrote SQL analytics using CTEs and window functions to compute 30-day readmission rates, average length of stay, and utilization trends. I added dbt for transformation management (staging + mart models with 27 tests), HEDIS-style quality measures (ACR and FUH), and an interpretable logistic regression model with an interactive risk scorer. The results are surfaced through an 8-page Streamlit dashboard with KPI cards, interactive Plotly charts, cohort breakdowns, facility comparisons, a model explainability page, and HEDIS reporting. There's also a GitHub Actions CI pipeline, global date filters, CSV exports, and a data quality monitoring page. The architecture: CSV → Python ETL → PostgreSQL → dbt → SQL analytics → Dashboard. Every piece is explainable and locally runnable."
 
 ### 2-Minute Version
 
 > Start with the 1-minute version, then add:
 >
-> "The project answers questions a hospital VP would actually ask: Which age groups have the highest readmission rates? Are patients with multiple chronic conditions returning more often? How do our facilities compare on cost and length of stay? I used a Synthea-style data generator to create 1,000 patients with ~6,000 encounters across 8 facilities. The readmission detection uses a LEAD window function to find the next inpatient admission per patient, then flags any gaps of 30 days or less. I also added a simple logistic regression model — not as a clinical tool, but to show which features (age, chronic count, prior ED visits) are most associated with readmission. The model is fully interpretable with feature importance charts. I chose this architecture because it mirrors real-world healthcare analytics: a data warehouse, SQL-based reporting, and a BI-style dashboard — just scaled down to be portfolio-appropriate."
+> "The project answers questions a hospital VP would actually ask: Which age groups have the highest readmission rates? Are patients with multiple chronic conditions returning more often? How do our facilities compare on cost and length of stay? I used a Synthea-style data generator to create 1,000 patients with ~6,000 encounters across 8 facilities. The readmission detection uses a LEAD window function to find the next inpatient admission per patient, then flags any gaps of 30 days or less. I built dbt models (3 staging + 3 mart) with 27 tests for transformation management. I implemented HEDIS measures — ACR (All-Cause Readmissions) and FUH (Follow-Up After MH Hospitalization) — to demonstrate NCQA-aligned quality reporting. The model explainability page shows ROC curves, feature importance, a confusion matrix, and an interactive risk scorer. I chose this architecture because it mirrors real-world healthcare analytics: a data warehouse, dbt transformations, SQL-based reporting, HEDIS measures, and a BI-style dashboard — just scaled down to be portfolio-appropriate."
 
 ### 5-Minute Version
 
@@ -48,8 +48,11 @@ A comprehensive guide to explaining every aspect of this project in interviews.
 > 1. **The data model** — show the ER diagram, explain patients → encounters → conditions/procedures/medications
 > 2. **One SQL query** — open readmission_flag.sql and explain the CTE + LEAD window function
 > 3. **The dashboard** — demo the Executive Overview (KPI cards, monthly trend) and Readmission Analysis (cohort breakdowns)
-> 4. **Data quality** — show the quality score gauge and explain why you built monitoring
-> 5. **What you'd improve** — mention time-based train/test split, clinical validation, Airflow for scheduling, dbt for transformations
+> 4. **dbt** — show the staging → mart model chain, explain the 27 automated tests
+> 5. **HEDIS Measures** — explain ACR/FUH measures and NCQA alignment
+> 6. **Model Explainability** — show ROC curve, feature importance, interactive risk scorer
+> 7. **Data quality** — show the quality score gauge and explain why you built monitoring
+> 8. **What you'd improve** — mention time-based train/test split, clinical validation, Airflow for scheduling, more HEDIS measures
 
 ---
 
@@ -86,11 +89,18 @@ Synthea-style CSVs → Python ETL (pandas) → PostgreSQL → SQL Analytics → 
 - You can test and debug each layer independently
 - SQL stays visible and reviewable (not buried in Python)
 
+**What this project already includes (beyond a typical portfolio project):**
+- **dbt** for transformation management (3 staging + 3 mart models, 27 tests)
+- **GitHub Actions CI** pipeline (pytest + dbt build against PostgreSQL service)
+- **HEDIS quality measures** (NCQA-aligned ACR and FUH)
+- **Model explainability** page with interactive risk scorer
+- **Data lineage** diagram (Mermaid) in architecture docs
+
 **What a production version would add:**
-- Airflow or dbt for scheduling and transformation management
+- Airflow for scheduling the ETL pipeline
 - A proper data warehouse (Snowflake, Redshift)
 - Role-based access control
-- CI/CD pipeline
+- More HEDIS measures (BCS, CIS, CDC)
 
 ---
 
@@ -184,12 +194,15 @@ Key relationships:
 
 Walk through each page:
 
-1. **Home** — explains what the platform does and how to navigate
-2. **Executive Overview** — "These are the numbers a hospital CEO sees on Monday morning: total encounters, readmission rate, average LOS, cost. The monthly trend shows if things are getting better or worse."
+1. **Home** — explains what the platform does and how to navigate all 8 pages
+2. **Executive Overview** — "These are the numbers a hospital CEO sees on Monday morning: total encounters, readmission rate, average LOS, cost. The monthly trend shows if things are getting better or worse. Global date filters let you drill into any time range."
 3. **Cohort Explorer** — "This breaks down our patient population by age, gender, race, and chronic-condition burden. The key insight is patients with 3+ chronic conditions — they drive disproportionate resource use."
 4. **Readmission Analysis** — "This is the heart of the project. We can slice readmission rates by age, condition, payer, and chronic count. Each chart has a 'so what?' annotation explaining what the pattern means."
 5. **Utilization Trends** — "Volume and cost trends over time. If total cost is rising but average cost is flat, it means we're seeing more patients, not sicker patients."
-6. **Data Quality** — "Before trusting any dashboard, you need to know if your data is clean. This page scores completeness, uniqueness, and referential integrity."
+6. **Facility Drilldown** — "Compares our 8 facilities on readmission rate, cost, and length of stay. Uses NTILE quartile rankings to identify outliers."
+7. **Data Quality** — "Before trusting any dashboard, you need to know if your data is clean. This page scores completeness, uniqueness, and referential integrity."
+8. **Model Explainability** — "Shows the logistic regression model's ROC curve, feature importance, confusion matrix, and an interactive risk scorer where you can adjust patient features with sliders and see the predicted probability change in real time."
+9. **HEDIS Measures** — "NCQA-aligned quality measures. ACR (All-Cause Readmissions) shows readmission rates for adults 18-64 with quarterly trends and payer breakdowns. FUH tracks follow-up after mental health hospitalization. Includes measure definition reference tables."
 
 ---
 
@@ -211,13 +224,15 @@ Walk through each page:
 ### "What would you improve in production?"
 
 > "Several things:
-> 1. **dbt** for SQL transformation management instead of raw Python scripts
-> 2. **Airflow** to schedule the ETL pipeline on a daily/weekly cadence
-> 3. **Time-based train/test split** for the model (don't train on future data)
-> 4. **Role-based access** so clinicians see only their facility's data
-> 5. **Alerting** — notify when readmission rate exceeds a threshold
-> 6. **Proper data warehouse** (Snowflake/Redshift) for larger data
-> 7. **Data lineage** tracking so you know where every number came from"
+> 1. **Airflow** to schedule the ETL pipeline on a daily/weekly cadence
+> 2. **Time-based train/test split** for the model (don't train on future data)
+> 3. **Role-based access** so clinicians see only their facility's data
+> 4. **Alerting** — notify when readmission rate exceeds a threshold
+> 5. **Proper data warehouse** (Snowflake/Redshift) for larger data
+> 6. **More HEDIS measures** — BCS, CIS, CDC for pediatric and preventive care
+> 7. **Patient-level drilldown** — click a row to see individual encounter history"
+>
+> Note: dbt, CI/CD, data lineage, and model explainability are already implemented in this project.
 
 ### "Why didn't you use deep learning?"
 
@@ -286,13 +301,13 @@ Walk through each page:
 
 ## Explain This Like I'm a Data Engineer
 
-> "It's a batch ETL pipeline: Python generates Synthea-style CSVs, loads them into PostgreSQL with pandas + SQLAlchemy, runs cleaning passes (dedup, date validation, null checks), then builds a derived readmissions table using a window function self-join on the encounters table. SQL analytics queries live in separate .sql files — CTEs, LEAD(), PERCENTILE_CONT, DATE_TRUNC aggregations. The Streamlit app reads from Postgres via the same SQLAlchemy engine. Tests cover transformation logic, readmission flagging, and DQ checks. In production, I'd swap the Python ETL for dbt and add Airflow scheduling."
+> "It's a batch ETL pipeline: Python generates Synthea-style CSVs, loads them into PostgreSQL with pandas + SQLAlchemy, runs cleaning passes (dedup, date validation, null checks), then builds a derived readmissions table using a window function self-join on the encounters table. dbt manages the transformation layer — 3 staging models + 3 mart models with 27 tests. SQL analytics queries live in separate .sql files — CTEs, LEAD(), PERCENTILE_CONT, DATE_TRUNC aggregations, plus HEDIS measure definitions (ACR, FUH). The Streamlit app reads from Postgres via the same SQLAlchemy engine. GitHub Actions CI runs pytest + dbt build against a PostgreSQL service container. Tests cover transformation logic, readmission flagging, and DQ checks. In production, I'd add Airflow scheduling and a proper warehouse."
 
 ---
 
 ## Explain This Like I'm a Data Analyst Lead
 
-> "CarePulse is a self-contained analytics platform focused on 30-day readmission and utilization. The data model has 7 base tables (patients, encounters, conditions, procedures, medications, providers, organizations) plus a derived readmissions table. Key metrics: 30-day readmission rate, ALOS, ED utilization, chronic burden. The dashboard has 6 pages: exec overview, cohort explorer, readmission deep-dive, utilization trends, facility drilldown, and data quality. Every chart has a 'so what' annotation. SQL is in separate files for reviewability. There's also a logistic regression risk score, but it's positioned as decision-support, not clinical."
+> "CarePulse is a self-contained analytics platform focused on 30-day readmission, utilization, and HEDIS quality measures. The data model has 7 base tables (patients, encounters, conditions, procedures, medications, providers, organizations) plus a derived readmissions table. dbt adds 3 staging + 3 mart models. Key metrics: 30-day readmission rate, ALOS, ED utilization, chronic burden, HEDIS ACR (All-Cause Readmissions), and HEDIS FUH. The dashboard has 8 pages: exec overview, cohort explorer, readmission deep-dive, utilization trends, facility drilldown, data quality, model explainability (with interactive risk scorer), and HEDIS measures. Every chart has a 'so what' annotation. SQL is in separate files for reviewability. A logistic regression risk score is positioned as decision-support with full explainability — ROC curve, feature importance, confusion matrix. CI runs on GitHub Actions."
 
 ---
 

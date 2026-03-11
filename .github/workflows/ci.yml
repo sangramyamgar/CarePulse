@@ -62,6 +62,61 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -v --tb=short
 
+  dbt:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: carepulse
+          POSTGRES_USER: carepulse
+          POSTGRES_PASSWORD: carepulse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U carepulse"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: carepulse
+      DB_USER: carepulse
+      DB_PASSWORD: carepulse
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ETL dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas sqlalchemy psycopg2-binary python-dotenv numpy
+
+      - name: Install dbt
+        run: pip install "dbt-postgres>=1.10,<2"
+
+      - name: Create .env
+        run: |
+          cat > .env <<EOF
+          DB_HOST=$DB_HOST
+          DB_PORT=$DB_PORT
+          DB_NAME=$DB_NAME
+          DB_USER=$DB_USER
+          DB_PASSWORD=$DB_PASSWORD
+          EOF
+
+      - name: Run ETL pipeline
+        run: python run_etl.py
+
       - name: Set up dbt profile
         run: |
           mkdir -p ~/.dbt

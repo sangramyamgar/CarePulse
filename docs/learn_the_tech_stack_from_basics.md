@@ -14,12 +14,15 @@ A beginner-friendly guide to every technology used in this project. Written for 
 6. [Streamlit Basics for This Repo](#streamlit-basics)
 7. [Plotly Basics for This Repo](#plotly-basics)
 8. [Testing Basics for This Repo](#testing-basics)
-9. [How the Files Connect](#how-files-connect)
-10. [How Data Flows from Raw Input to Dashboard](#data-flow)
-11. [14-Day Study Plan](#study-plan)
-12. [Mini Exercises](#exercises)
-13. [File Reading Order](#reading-order)
-14. [Common Beginner Mistakes](#beginner-mistakes)
+9. [dbt Basics for This Repo](#dbt-basics-for-this-repo)
+10. [HEDIS Basics for This Repo](#hedis-basics-for-this-repo)
+11. [GitHub Actions CI Basics](#github-actions-ci-basics)
+12. [How the Files Connect](#how-files-connect)
+13. [How Data Flows from Raw Input to Dashboard](#data-flow)
+14. [14-Day Study Plan](#study-plan)
+15. [Mini Exercises](#exercises)
+16. [File Reading Order](#reading-order)
+17. [Common Beginner Mistakes](#beginner-mistakes)
 
 ---
 
@@ -31,8 +34,11 @@ A beginner-friendly guide to every technology used in this project. Written for 
 | **pandas** | Reads CSVs, cleans data, manipulates DataFrames. Used in ETL and analytics. |
 | **PostgreSQL** | The database. Stores all patient/encounter data in tables. SQL queries run here. |
 | **SQLAlchemy** | Connects Python to PostgreSQL. Sends SQL queries and receives results. |
+| **dbt** | Data Build Tool. Manages SQL transformations as version-controlled models with automated tests. |
 | **Streamlit** | Builds the web dashboard. Each page is a Python file that Streamlit renders. |
 | **Plotly** | Creates interactive charts (bar, line, pie, gauge). Used inside Streamlit. |
+| **scikit-learn** | Machine learning library. Trains the logistic regression readmission risk model. |
+| **GitHub Actions** | CI/CD pipeline. Runs pytest and dbt build automatically on every push. |
 | **pytest** | Runs tests to verify that your code logic is correct. |
 | **python-dotenv** | Reads database credentials from a `.env` file so you don't hardcode passwords. |
 
@@ -65,8 +71,8 @@ if __name__ == "__main__":
 ```
 
 ### What you DON'T need to know
-- Classes and OOP (not used)
-- Decorators (only Streamlit's @st.cache, which is not used here)
+- Classes and OOP (not used much)
+- Decorators (only Streamlit's @st.cache_resource, used in model training)
 - Async/await
 - Generators
 
@@ -349,6 +355,95 @@ def test_age_group_binning():
 
 ---
 
+## dbt Basics for This Repo
+
+### What dbt does
+dbt (Data Build Tool) manages SQL transformations as version-controlled models. Instead of writing ad-hoc SQL scripts, you write `.sql` files that dbt compiles, runs, and tests.
+
+### Key concepts
+
+| Concept | Meaning |
+|---------|---------|
+| **Model** | A `.sql` file in `models/`. Each model becomes a table or view. |
+| **Source** | A raw table that dbt reads from (defined in `sources.yml`). |
+| **Staging model** | A light transformation of a source (rename, add computed columns). |
+| **Mart model** | A business-ready aggregation built from staging models. |
+| **Test** | An assertion on your data (e.g., this column must be unique). |
+| **Profile** | Database connection settings (in `~/.dbt/profiles.yml`). |
+
+### Our dbt project structure
+```
+dbt_carepulse/
+├── dbt_project.yml             ← Project settings
+├── models/
+│   ├── staging/
+│   │   ├── sources.yml         ← Declares raw tables as sources
+│   │   ├── schema.yml          ← Tests for staging models
+│   │   ├── stg_patients.sql    ← Adds current_age, age_group, is_alive
+│   │   ├── stg_encounters.sql  ← Adds los_days, encounter_month
+│   │   └── stg_conditions.sql  ← Dedupes, adds is_chronic flag
+│   └── marts/
+│       ├── schema.yml          ← Tests for mart models
+│       ├── mart_readmissions.sql         ← 30-day readmission flagging (LEAD)
+│       ├── mart_utilization_monthly.sql  ← Monthly aggregates by facility
+│       └── mart_facility_performance.sql ← Facility scorecard with NTILE rankings
+```
+
+### Key dbt commands
+```bash
+cd dbt_carepulse
+dbt debug          # Test database connection
+dbt run            # Build all models
+dbt test           # Run all tests (27 tests)
+dbt build          # Run + test in one command
+dbt docs generate  # Generate documentation
+```
+
+### Why dbt matters for interviews
+- Shows you understand **transformation management**, not just ad-hoc SQL
+- Tests prove your data contracts are enforced
+- It's the industry standard tool for analytics engineering
+- Demonstrates staging → mart pattern used at every modern data team
+
+---
+
+## HEDIS Basics for This Repo
+
+### What HEDIS is
+HEDIS (Healthcare Effectiveness Data and Information Set) is a set of quality measures published by NCQA (National Committee for Quality Assurance). Health plans are graded on these measures.
+
+### Measures in this project
+
+| Measure | Full Name | What It Measures |
+|---------|-----------|-----------------|
+| **ACR** | Plan All-Cause Readmissions | % of adults 18-64 readmitted within 30 days (lower is better) |
+| **FUH** | Follow-Up After Hospitalization for Mental Illness | % of MH discharges with outpatient follow-up within 7/30 days (higher is better) |
+
+### Why HEDIS matters for Kaiser interviews
+- Kaiser Permanente reports HEDIS measures to NCQA annually
+- Showing you understand HEDIS demonstrates healthcare domain knowledge
+- ACR directly relates to the readmission analysis in this project
+
+---
+
+## GitHub Actions CI Basics
+
+### What CI does
+Continuous Integration (CI) automatically runs tests every time you push code. Our `.github/workflows/ci.yml` spins up a PostgreSQL database, runs the ETL, executes pytest, and builds dbt models.
+
+### Two CI jobs
+1. **test** — Installs app dependencies, runs ETL, runs `pytest tests/ -v`
+2. **dbt** — Installs dbt, runs ETL, runs `dbt build`
+
+They run in parallel, each with their own PostgreSQL service container.
+
+### Why CI matters
+- Catches breaking changes before they reach production
+- Proves your code works on a clean machine (not just your laptop)
+- The green badge in README shows the project is well-maintained
+
+---
+
 ## How the Files Connect
 
 ```
@@ -368,6 +463,12 @@ src/analysis/          ← Query functions (return DataFrames)
   utilization.py       ← Volume, LOS, cost queries
   cohorts.py           ← Age/condition breakdowns
   facilities.py        ← Facility comparisons
+  hedis.py             ← HEDIS quality measure queries (ACR, FUH)
+  risk_model.py        ← Logistic regression readmission risk model
+    ↓
+dbt_carepulse/         ← dbt project (transformation layer)
+  models/staging/      ← stg_patients, stg_encounters, stg_conditions
+  models/marts/        ← mart_readmissions, mart_utilization, mart_facility
     ↓
 app/pages/             ← Dashboard pages (import from src/analysis/)
   1_Executive_Overview.py
@@ -376,6 +477,8 @@ app/pages/             ← Dashboard pages (import from src/analysis/)
   4_Utilization_Trends.py
   5_Facility_Drilldown.py
   6_Data_Quality.py
+  7_Model_Explainability.py  ← ROC curve, feature importance, interactive scorer
+  8_HEDIS_Measures.py        ← NCQA-aligned ACR and FUH measures
 ```
 
 ---
@@ -430,11 +533,21 @@ Step 6: Render
 |-----|--------------|------|-----------|
 | **8** | Read src/analysis/readmissions.py + utilization.py | 1.5 hr | Understand each query function |
 | **9** | Read src/analysis/cohorts.py + facilities.py | 1 hr | Understand cohort and facility queries |
-| **10** | Read app/pages/1_Executive_Overview.py | 1 hr | Understand how data → chart in Streamlit |
-| **11** | Read app/pages/3_Readmission_Analysis.py | 1.5 hr | The core dashboard page |
-| **12** | Read app/pages/6_Data_Quality.py and src/data_quality/checks.py | 1 hr | Understand DQ scoring |
-| **13** | Read docs/interview_guide.md | 2 hr | Practice explaining the project |
-| **14** | Practice the 1-minute and 5-minute pitches out loud | 1 hr | Say it 3 times until it's natural |
+| **10** | Read dbt_carepulse/models/ (staging + marts) | 1.5 hr | Understand dbt staging → mart transformation chain |
+| **11** | Read app/pages/1_Executive_Overview.py | 1 hr | Understand how data → chart in Streamlit |
+| **12** | Read app/pages/3_Readmission_Analysis.py | 1.5 hr | The core dashboard page |
+| **13** | Read sql/hedis_acr.sql + src/analysis/hedis.py | 1 hr | Understand HEDIS quality measures |
+| **14** | Read app/pages/7_Model_Explainability.py | 1 hr | Understand the risk model + interactive scorer |
+
+### Week 3: Polish and Practice
+
+| Day | What to Study | Time | What to Do |
+|-----|--------------|------|-----------|
+| **15** | Read app/pages/6_Data_Quality.py and src/data_quality/checks.py | 1 hr | Understand DQ scoring |
+| **16** | Read .github/workflows/ci.yml | 0.5 hr | Understand the CI pipeline |
+| **17** | Read docs/architecture.md (data lineage diagram) | 1 hr | Trace data flow from source to dashboard |
+| **18** | Read docs/interview_guide.md | 2 hr | Practice explaining the project |
+| **19** | Practice the 1-minute and 5-minute pitches out loud | 1 hr | Say it 3 times until it's natural |
 
 ---
 
@@ -467,7 +580,7 @@ Open `sql/readmission_flag.sql`. Without running it, trace through the logic and
 Start here and read in this order:
 
 1. `README.md` — what the project does
-2. `docs/architecture.md` — how pieces connect
+2. `docs/architecture.md` — how pieces connect + data lineage diagram
 3. `docs/data_model.md` — what tables exist and why
 4. `src/config.py` — settings and constants
 5. `src/db.py` — how Python talks to the database
@@ -477,10 +590,17 @@ Start here and read in this order:
 9. `src/etl/clean.py` — cleaning data
 10. `src/etl/transform.py` — **most important** — readmission logic
 11. `sql/readmission_flag.sql` — same logic in pure SQL
-12. `src/analysis/readmissions.py` — query functions
-13. `app/pages/1_Executive_Overview.py` — how data becomes a dashboard
-14. `app/pages/3_Readmission_Analysis.py` — the core analytics page
-15. `docs/interview_guide.md` — how to talk about it all
+12. `dbt_carepulse/models/staging/` — dbt staging models (stg_patients, stg_encounters, stg_conditions)
+13. `dbt_carepulse/models/marts/` — dbt mart models (readmissions, utilization, facility performance)
+14. `src/analysis/readmissions.py` — readmission query functions
+15. `src/analysis/hedis.py` — HEDIS quality measure functions
+16. `src/analysis/risk_model.py` — logistic regression risk model
+17. `app/pages/1_Executive_Overview.py` — how data becomes a dashboard
+18. `app/pages/3_Readmission_Analysis.py` — the core analytics page
+19. `app/pages/7_Model_Explainability.py` — ML model visualization + interactive scorer
+20. `app/pages/8_HEDIS_Measures.py` — NCQA-aligned quality reporting
+21. `.github/workflows/ci.yml` — CI/CD pipeline configuration
+22. `docs/interview_guide.md` — how to talk about it all
 
 ---
 
