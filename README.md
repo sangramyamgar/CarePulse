@@ -76,9 +76,10 @@ pip install -r requirements.txt
 **With PostgreSQL** (full mode):
 
 ```bash
-cp .env.example .env          # edit with your PG credentials
+pip install psycopg2-binary     # needed for PostgreSQL only
+cp .env.example .env            # edit with your PG credentials
 createdb carepulse
-python run_etl.py             # generate data, build schema, load
+python run_etl.py               # generate data, build schema, load
 streamlit run app/Home.py
 ```
 
