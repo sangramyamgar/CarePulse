@@ -1,109 +1,136 @@
-# CarePulse: Readmission & Utilization Analytics Platform
+# CarePulse
+
+**Readmission & Utilization Analytics Platform**
 
 [![CI — Tests & Data Contracts](https://github.com/sangramyamgar/CarePulse/actions/workflows/ci.yml/badge.svg)](https://github.com/sangramyamgar/CarePulse/actions/workflows/ci.yml)
 
-A healthcare analytics project that ingests synthetic patient data, models it in PostgreSQL, computes readmission rates and utilization metrics, and surfaces insights through an interactive Streamlit dashboard.
+> A healthcare analytics platform that ingests synthetic patient data,
+> models it in a relational database, computes readmission rates, HEDIS
+> quality measures, and utilization metrics, then serves insights through
+> an 8-page interactive Streamlit dashboard.
 
-## What This Project Does
+---
 
-CarePulse answers the questions hospital leadership actually asks:
+## Live Demo
 
-- **Which patient groups keep coming back within 30 days?**
-- **How does utilization vary across facilities, age groups, and conditions?**
-- **Where are our operational hotspots?**
-- **Is our data complete and trustworthy?**
+👉 **[Open the dashboard](https://carepulse.streamlit.app)** — runs on synthetic
+data, no setup required.
+
+---
+
+## Features
+
+| Area | What it does |
+|---|---|
+| **Executive Overview** | KPIs, encounter volume trends, payer mix, readmission sparklines |
+| **Cohort Explorer** | Demographics, age-group breakdowns, chronic condition burden |
+| **Readmission Analysis** | 30-day readmission drivers by condition, payer, and age cohort |
+| **Utilization Trends** | Monthly volume, cost trends, ALOS, and service-line mix |
+| **Facility Drilldown** | Side-by-side facility comparison with provider-level detail |
+| **Data Quality Monitor** | Completeness, validity, referential integrity, DQ score |
+| **Model Explainability** | Logistic regression risk model, feature importance, SHAP-style breakdown |
+| **HEDIS Measures** | ACR (All-Cause Readmissions) and FUH (Follow-Up After Hospitalization) aligned to NCQA specs |
 
 ## Architecture
 
 ```
-Synthea CSVs → Python ETL → PostgreSQL → SQL Analytics → Streamlit Dashboard
+Synthea CSVs ─► Python ETL ─► PostgreSQL ──► SQL Analytics ──► Streamlit Dashboard
+                   │                              │
+                   └─── dbt (6 models, 27 tests) ─┘
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the full diagram.
+The dashboard also runs without PostgreSQL — it automatically falls back to
+an in-memory DuckDB loaded from bundled demo CSVs.
+
+See [docs/architecture.md](docs/architecture.md) and
+[docs/data_model.md](docs/data_model.md) for details.
+
+## Tech Stack
+
+| Layer | Tools |
+|---|---|
+| ETL & data processing | Python, pandas, NumPy |
+| Data warehouse | PostgreSQL (local) · DuckDB (cloud demo) |
+| Data modeling & testing | dbt-core (6 mart/staging models, 27 schema tests) |
+| Analytics | SQL, scikit-learn (logistic regression risk model) |
+| Dashboard | Streamlit, Plotly |
+| CI/CD | GitHub Actions (pytest + dbt build, parallel jobs) |
+| Hosting | Streamlit Community Cloud |
 
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.10+
-- PostgreSQL 14+
-- macOS (tested) or Linux
+- PostgreSQL 14+ (optional — demo mode works without it)
 
 ### Setup
 
 ```bash
-# 1. Clone and enter the project
-cd Kaiser
-
-# 2. Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# 3. Install dependencies
+git clone https://github.com/sangramyamgar/CarePulse.git
+cd CarePulse
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-# 4. Copy and edit environment config
-cp .env.example .env
-# Edit .env with your PostgreSQL credentials
+**With PostgreSQL** (full mode):
 
-# 5. Create the database
+```bash
+cp .env.example .env          # edit with your PG credentials
 createdb carepulse
-
-# 6. Generate synthetic data (creates CSVs in data/raw/)
-python src/etl/generate_synthetic_data.py
-
-# 7. Run the full ETL pipeline
-python run_etl.py
-
-# 8. Launch the dashboard
+python run_etl.py             # generate data, build schema, load
 streamlit run app/Home.py
+```
+
+**Without PostgreSQL** (demo mode):
+
+```bash
+DEMO_MODE=true streamlit run app/Home.py
+```
+
+Demo mode loads the bundled `data/demo/` CSVs into DuckDB — all 8 dashboard
+pages work identically.
+
+### Run tests
+
+```bash
+python -m pytest tests/ -v
 ```
 
 ## Project Structure
 
 ```
-Kaiser/
-├── app/                  # Streamlit dashboard (multi-page)
+CarePulse/
+├── app/                   # Streamlit dashboard (8 pages + Home)
+│   ├── Home.py
+│   ├── theme.py           # Design system (colors, CSS, helpers)
+│   ├── filters.py         # Global sidebar date filter
+│   └── pages/             # 1_Executive_Overview … 8_HEDIS_Measures
 ├── src/
-│   ├── etl/              # Extract, transform, load
-│   ├── analysis/         # Analytics logic (readmissions, utilization, cohorts)
-│   ├── features/         # Derived tables and risk flags
-│   └── data_quality/     # Data completeness and validity checks
-├── sql/                  # Standalone SQL queries (well-commented)
-├── tests/                # pytest test suite
-├── notebooks/            # Exploration only (not the product)
-├── data/raw/             # Synthea-style CSVs
-├── data/processed/       # Intermediate outputs
-└── docs/                 # Architecture, data model, interview guides
+│   ├── etl/               # generate → load → clean → transform
+│   ├── analysis/          # readmissions, utilization, cohorts, HEDIS, risk model
+│   ├── features/          # Feature engineering for risk model
+│   ├── data_quality/      # Completeness, validity, referential integrity
+│   ├── config.py          # Central configuration
+│   └── db.py              # PostgreSQL ↔ DuckDB dual-backend
+├── sql/                   # Standalone SQL (HEDIS, facility, data quality)
+├── dbt_carepulse/         # dbt project (staging + marts)
+├── data/demo/             # Bundled synthetic CSVs for demo mode
+├── tests/                 # pytest suite (15 tests)
+└── docs/                  # Architecture & data model
 ```
 
 ## Key Metrics
 
 | Metric | Definition |
 |---|---|
-| 30-Day Readmission Rate | % of inpatient discharges with a re-admission within 30 days |
-| Avg Length of Stay (ALOS) | Mean inpatient encounter duration in days |
-| ED Utilization Rate | Emergency visits per 1,000 patients per month |
-| Chronic Condition Prevalence | % of patients with multiple chronic conditions |
-
-## Tech Stack
-
-- **Python** — data processing, ETL, dashboard
-- **pandas** — data manipulation
-- **PostgreSQL** — relational data storage
-- **SQLAlchemy** — database access layer
-- **Streamlit** — interactive dashboard
-- **Plotly** — charts and visualizations
-- **pytest** — testing
-
-## Documentation
-
-- [Project Plan](docs/project_plan.md)
-- [Architecture](docs/architecture.md)
-- [Data Model](docs/data_model.md)
-- [Interview Guide](docs/interview_guide.md)
-- [Learning Guide](docs/learn_the_tech_stack_from_basics.md)
-- [Mac + VS Code Setup](docs/mac_vscode_setup_guide.md)
+| 30-Day Readmission Rate | % of inpatient discharges re-admitted within 30 days |
+| ALOS | Average length of stay (inpatient days) |
+| HEDIS ACR | All-Cause Readmission rate per NCQA specification |
+| HEDIS FUH | Follow-Up After Hospitalization for Mental Illness |
+| DQ Score | Composite data quality score (completeness + uniqueness + referential integrity) |
 
 ## License
 
-This project uses synthetic data only. No real patient data is included or required.
+This project uses synthetic data generated by a custom Synthea-style pipeline.
+No real patient data is included or required.

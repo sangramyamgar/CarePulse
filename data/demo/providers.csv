@@ -1,0 +1,41 @@
+id,name,specialty,org_id
+5ca31869-b7b7-43c0-adad-67d23556ed98,Dr. Matthew Wilson,Neurology,09a7e64d-d34d-47aa-b380-fbaa7e907143
+2e84a956-0357-46fe-8dd4-1b4bbdcef574,Dr. Michael Hernandez,Internal Medicine,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+96e3673b-af55-4444-bf39-b2bbeed2363a,Dr. Patricia Lopez,Neurology,09a7e64d-d34d-47aa-b380-fbaa7e907143
+b8fd09d0-2a94-43ae-b00f-4a36998fa9b4,Dr. Matthew Anderson,Endocrinology,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+2e3fdcfc-ce17-4b82-aa13-6991ed2310ab,Dr. Patricia Moore,Orthopedics,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+c6d0a052-ede5-462c-b834-d5240bde8419,Dr. Matthew Williams,General Practice,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+3a1f575a-ebb6-40e8-a391-03d6e721eba4,Dr. Patricia Davis,Internal Medicine,b468fbe4-621c-4f77-8e45-ee6334fee1db
+fe84784b-1d91-461f-8486-27b865bdd7af,Dr. Jessica Lee,Neurology,e8d09941-39d4-4193-b21f-246e0dbfed37
+30b5c7e5-8f45-4f99-9360-1ad528a6affc,Dr. Elizabeth Miller,Orthopedics,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+a6d3bb1f-b5cd-4af0-9486-3df6830cd73f,Dr. Thomas White,Pulmonology,e8d09941-39d4-4193-b21f-246e0dbfed37
+14892cd5-90e3-49eb-8e63-32c6fe4547d7,Dr. Susan Rodriguez,Endocrinology,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+5600b44d-c28a-4d4a-80f9-b2040f0f6b1f,Dr. Mary Davis,General Practice,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+669e8ded-820f-4ae5-9c3e-cfac466b558a,Dr. Barbara Williams,Pulmonology,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+dd285b6e-db7c-4545-a1ff-03d4d4f97ddd,Dr. Daniel Thomas,Emergency Medicine,7c22cbf2-24fa-4649-a3dd-5ef6abf56957
+cd319f02-71fe-4add-8fdc-49a37dee4275,Dr. David Jones,Pulmonology,09a7e64d-d34d-47aa-b380-fbaa7e907143
+92e6c1c8-e81a-4d16-a2e2-7e886f3d8181,Dr. Karen Gonzalez,Neurology,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+da88077c-4689-45bf-8aa1-828debef7aed,Dr. Thomas Thomas,Internal Medicine,a7ecdf62-c9e9-49c1-bd65-c87a241880b0
+be57684d-607e-451f-90b5-193c846f2f15,Dr. John Lee,Cardiology,b468fbe4-621c-4f77-8e45-ee6334fee1db
+30c4c4e7-5cdc-48cc-be74-d07341701677,Dr. Richard Gonzalez,Oncology,7c22cbf2-24fa-4649-a3dd-5ef6abf56957
+266c6b79-cdd9-47db-95d5-737641b8c093,Dr. Sarah Smith,Internal Medicine,09a7e64d-d34d-47aa-b380-fbaa7e907143
+1b75bbe2-8fa5-4f25-8dbd-7b3de7fe7981,Dr. Patricia Martinez,Emergency Medicine,e8d09941-39d4-4193-b21f-246e0dbfed37
+ac75d290-edc2-4511-b63b-c9d5f0f3f8f7,Dr. Mary White,Orthopedics,e8d09941-39d4-4193-b21f-246e0dbfed37
+8d3ee75b-a2b0-4283-a22f-ca4bda6d6a12,Dr. Daniel Martinez,Endocrinology,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+aeb2847c-821b-41e1-834c-138a22a64ae7,Dr. William Garcia,Endocrinology,a7ecdf62-c9e9-49c1-bd65-c87a241880b0
+63560697-126a-4349-b40b-ab40b03e3ec2,Dr. Jessica Smith,Internal Medicine,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+9460b7a7-f6e7-4e26-acc5-21a03948bab3,Dr. Linda Johnson,Pulmonology,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+1e14f9f4-b78f-435d-9a36-96ae2f8e2ebe,Dr. Matthew Thomas,Internal Medicine,e8d09941-39d4-4193-b21f-246e0dbfed37
+4b89829f-ae55-4309-80bf-d723010672a6,Dr. Daniel Thomas,Endocrinology,e8d09941-39d4-4193-b21f-246e0dbfed37
+165c908c-bcd6-4c5f-b0da-735fc4955d51,Dr. Sarah Martin,Emergency Medicine,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+847078fc-4836-4484-ae64-4f379213167a,Dr. Matthew Martinez,Emergency Medicine,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+cba9e579-9f03-4679-afb9-a8a4cb4cd061,Dr. Sarah Anderson,Internal Medicine,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+6620fb27-fdd9-4eec-9783-727513b25655,Dr. Robert Hernandez,General Practice,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+f29b434a-9101-4886-8004-1fc57c25e0e2,Dr. James Williams,General Practice,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+804ba61d-ee45-4cf0-bbb7-21f601cc77e6,Dr. James Hernandez,Internal Medicine,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+cc58fcc4-624a-43ff-9d49-a98fb65c1bd8,Dr. Lisa Thomas,Pulmonology,e8d09941-39d4-4193-b21f-246e0dbfed37
+71fca10b-a9bd-4e45-95aa-264b0c879c06,Dr. Linda Thomas,Emergency Medicine,6e9fd2e5-b42e-4669-b655-05a1c0028e8b
+582e463c-0471-4e15-ae63-0bf68f86d83e,Dr. Robert Perez,Emergency Medicine,d1d88d43-5d58-416b-8e9e-91f830d4c0a3
+dd5801fa-48b5-4ade-bf66-e2a01ccd2b51,Dr. Susan Anderson,General Practice,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+75745312-5e66-4161-b6bd-146950022252,Dr. Richard White,Neurology,d7dc5e44-82d5-4033-b5a9-6b67d1ae3473
+f34d55d6-7fbc-4f7d-a47c-16b88fe7f073,Dr. Michael Miller,Endocrinology,7c22cbf2-24fa-4649-a3dd-5ef6abf56957

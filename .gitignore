@@ -29,6 +29,14 @@ notebooks/.ipynb_checkpoints/
 # macOS
 .DS_Store
 
+# Interview / study notes (local only)
+docs/interview_guide.md
+docs/interview_cheat_sheet.md
+docs/learn_the_tech_stack_from_basics.md
+docs/mac_vscode_setup_guide.md
+docs/project_plan.md
+notebooks/
+
 # Streamlit
 .streamlit/secrets.toml
 
