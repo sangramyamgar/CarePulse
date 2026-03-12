@@ -19,10 +19,16 @@ def get_date_filter() -> tuple[datetime.date, datetime.date]:
     earliest = date_range["earliest"]
     latest = date_range["latest"]
 
-    # Convert to date objects if they're strings/timestamps
-    if not isinstance(earliest, datetime.date):
+    # Normalise to plain datetime.date (DuckDB returns pandas Timestamps)
+    import pandas as pd
+    if isinstance(earliest, (pd.Timestamp, datetime.datetime)):
+        earliest = earliest.date()
+    elif not isinstance(earliest, datetime.date):
         earliest = datetime.date.fromisoformat(str(earliest)[:10])
-    if not isinstance(latest, datetime.date):
+
+    if isinstance(latest, (pd.Timestamp, datetime.datetime)):
+        latest = latest.date()
+    elif not isinstance(latest, datetime.date):
         latest = datetime.date.fromisoformat(str(latest)[:10])
 
     st.sidebar.markdown("---")
