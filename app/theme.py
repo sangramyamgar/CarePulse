@@ -89,6 +89,18 @@ footer {visibility: hidden;}
     letter-spacing: 0.05em;
 }
 
+/* Date input: keep text dark inside the white input box */
+[data-testid="stSidebar"] .stDateInput input {
+    color: #1E293B !important;
+    background: #FFFFFF !important;
+}
+[data-testid="stSidebar"] .stDateInput [data-baseweb="input"] {
+    background: #FFFFFF !important;
+}
+[data-testid="stSidebar"] .stDateInput svg {
+    fill: #64748B !important;
+}
+
 /* Metric cards */
 [data-testid="stMetric"] {
     background: #F8FAFC;
