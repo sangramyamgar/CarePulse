@@ -12,8 +12,8 @@ from src.config import SQL_DIR
 
 
 def get_overall_readmission_rate(start: datetime.date | None = None, end: datetime.date | None = None) -> dict:
-    dc, dp = date_clause(start, end, "discharge_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "discharge_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     df = run_query(f"""
         SELECT
             COUNT(*) AS total_inpatient,
@@ -29,8 +29,8 @@ def get_overall_readmission_rate(start: datetime.date | None = None, end: dateti
 
 
 def get_readmission_trend(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
-    dc, dp = date_clause(start, end, "discharge_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "discharge_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     return run_query(f"""
         SELECT
             DATE_TRUNC('month', discharge_date)::DATE AS month,

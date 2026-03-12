@@ -12,9 +12,8 @@ from src.config import SQL_DIR
 
 
 def get_headline_metrics(start: datetime.date | None = None, end: datetime.date | None = None) -> dict:
-    dc, dp = date_clause(start, end, "start_date", "WHERE" if True else "AND")
-    # When no filter, WHERE 1=1 keeps it easy
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     df = run_query(f"""
         SELECT
             COUNT(*)                                                AS total_encounters,
@@ -34,8 +33,8 @@ def get_headline_metrics(start: datetime.date | None = None, end: datetime.date 
 
 
 def get_monthly_volume(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
-    dc, dp = date_clause(start, end, "start_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     return run_query(f"""
         SELECT
             DATE_TRUNC('month', start_date)::DATE AS month,
@@ -49,8 +48,8 @@ def get_monthly_volume(start: datetime.date | None = None, end: datetime.date | 
 
 
 def get_volume_by_class(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
-    dc, dp = date_clause(start, end, "start_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     return run_query(f"""
         SELECT
             encounter_class,
@@ -96,8 +95,8 @@ def get_top_conditions(top_n: int = 10) -> pd.DataFrame:
 
 
 def get_payer_mix(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
-    dc, dp = date_clause(start, end, "start_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     return run_query(f"""
         SELECT
             payer,
@@ -111,8 +110,8 @@ def get_payer_mix(start: datetime.date | None = None, end: datetime.date | None 
 
 
 def get_cost_by_month(start: datetime.date | None = None, end: datetime.date | None = None) -> pd.DataFrame:
-    dc, dp = date_clause(start, end, "start_date", "WHERE")
-    where = f"WHERE 1=1 {dc}" if dc else ""
+    dc, dp = date_clause(start, end, "start_date", "AND")
+    where = f"WHERE 1=1 {dc}"
     return run_query(f"""
         SELECT
             DATE_TRUNC('month', start_date)::DATE AS month,
